@@ -179,6 +179,6 @@ file_size=$(du -m /tmp/stage1.tar.gz | awk '{print $1}')
 echo "S1.10   - Created tarball at /tmp/stage1.tar.gz ($((file_size))MB) containing stage1.json, postdata_metadata.json and key.bin"
 
 # Store the tarball + details locally or upload to a remote storage service
-echo "S1.11 Uploading node smesher data to network storage"
+# echo "S1.11 Uploading node smesher data to network storage"
 
 echo "Stage 1 Complete"
