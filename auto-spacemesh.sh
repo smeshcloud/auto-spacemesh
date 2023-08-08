@@ -21,10 +21,10 @@ echo "Installing dependencies"
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
   echo "Linux detected"
   sudo apt-get update
-  sudo apt-get install -y jq wget python3 python3-pip git
+  sudo apt-get install -y -q jq wget python3 python3-pip git
 elif [[ "$OSTYPE" == "darwin"* ]]; then
   echo "MacOS detected"
-  brew install jq wget python3 git
+  brew install -q jq wget python3 git
 elif [[ "$OSTYPE" == "win32" ]]; then
   echo "Windows detected"
   exit 1
@@ -35,12 +35,13 @@ fi
 
 # Clone the auto-spacemesh repo
 echo "Cloning auto-spacemesh repo"
-git clone https://github.com/smeshcloud/auto-spacemesh.git /tmp/auto-spacemesh
+rm -rf /tmp/auto-spacemesh
+git clone -q https://github.com/smeshcloud/auto-spacemesh.git /tmp/auto-spacemesh
 cd /tmp/auto-spacemesh
 
 # Install Python dependencies
 echo "Installing Python dependencies"
-pip3 install -r requirements.txt
+pip3 install -qqq -r requirements.txt
 
 # Present the user with choices and loop
 while true; do
@@ -61,12 +62,11 @@ while true; do
       bash stage1.sh
       ;;
     2)
-      echo "Generating a new Spacemesh node/smesher config and start smeshing"
+      echo "Generating a new Spacemesh node/smesher stage1 config and start smeshing"
       bash stage1.sh
       python3 stage2.py
       ;;
     3)
-      echo "Start smeshing using an existing Spacemesh node/smesher config"
       # Ask the user for the directory of the Spacemesh node/smesher config and default to /tmp/stage1 on Linux and MacOS and C:\TEMP\stage1 on Windows
       if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         default_path="/tmp/stage1"
@@ -78,20 +78,40 @@ while true; do
         echo "Unsupported OS"
         exit 1
       fi
-      echo -n "Path to existing Spacemesh node/smesher config [${default_path}]: "
+      echo -n "Path to existing Spacemesh node/smesher stage1 config [${default_path}]: "
       read -r path
       path=${path:-$default_path}
       # Check if the directory exists
       if [[ ! -d "$path" ]]; then
         echo "Directory does not exist"
       else
+        echo "Starting the smesher using stage1 config in $path"
         python3 stage2.py "$path"
       fi
       ;;
     4)
-      echo "Start smeshing using an existing Spacemesh node/smesher config and start smeshing"
-      python3 stage2.py
-      python3 stage3.py
+      # Ask the user for the directory of the Spacemesh node/smesher config and default to /tmp/stage1 on Linux and MacOS and C:\TEMP\stage1 on Windows
+      if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        default_path="/tmp/stage1"
+      elif [[ "$OSTYPE" == "darwin"* ]]; then
+        default_path="/tmp/stage1"
+      elif [[ "$OSTYPE" == "win32" ]]; then
+        default_path="C:\TEMP\stage1"
+      else
+        echo "Unsupported OS"
+        exit 1
+      fi
+      echo -n "Path to existing Spacemesh node/smesher stage1 config [${default_path}]: "
+      read -r path
+      path=${path:-$default_path}
+      # Check if the directory exists
+      if [[ ! -d "$path" ]]; then
+        echo "Directory does not exist"
+      else
+        echo "Starting the smesher using stage1 config in $path"
+        python3 stage2.py "$path"
+        python3 stage3.py
+      fi
       ;;
     5)
       echo "Exiting"
