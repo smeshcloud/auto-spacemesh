@@ -12,8 +12,162 @@
 #
 
 version="1.0.0"
+cloud_provider=""
+ssh_user=""
+ssh_host=""
+ssh_key=""
+exec_destination="local"
+config_path=""
+coinbase_address=""
+valid_choices=("1" "2" "3" "4")
+valid_cloud_providers=("runpod" "valt")
 
-echo "Auto-Spacemesh v$version"
+display_help() {
+  echo "Usage: script.sh [OPTIONS]"
+  echo "Options:"
+  echo "  -h, --help            Display this help message and exit"
+  echo "  -v, --version         Display version information and exit"
+  echo "  -c, --config PATH     Configure the script"
+  echo "  -C, --coinbase ADDR   Set the Coinbase address"
+  echo "  -l, --local           Execute locally (default)"
+  echo "  -s, --ssh USER@HOST   Execute remotely via SSH"
+  echo "  -k, --ssh-key KEY     Use a specific SSH key"
+  echo "  -b, --cloud PROVIDER  Execute in the cloud (runpod or valt)"
+  echo "  -r, --run CHOICE      Run choice directly (1-4)"
+}
+
+display_version() {
+  echo "auto-spacemesh version 1.0"
+}
+
+parse_options() {
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -h | --help)
+        display_help
+        exit 0
+        ;;
+      -v | --version)
+        display_version
+        exit 0
+        ;;
+      -c | --config)
+        if [[ -z $2 ]]; then
+          echo "Option --config requires an argument"
+          exit 1
+        fi
+        echo "Config option selected with argument: $2"
+        config_path="$2"
+        shift 2
+        ;;
+      -C | --coinbase)
+        if [[ -z $2 ]]; then
+          echo "Option --coinbase requires an argument"
+          exit 1
+        fi
+        echo "Coinbase option selected with argument: $2"
+        coinbase_address="$2"
+        shift 2
+        ;;
+      -l | --local)
+        if [[ $exec_destination == "ssh" || $exec_destination == "cloud" ]]; then
+          echo "Cannot specify both --local and --ssh or --cloud options"
+          exit 1
+        fi
+        echo "Local option selected"
+        exec_destination="local"
+        cloud_provider=""
+        ssh_user=""
+        ssh_host=""
+        ssh_key=""
+        shift
+        ;;
+      -s | --ssh)
+        if [[ $exec_destination == "local" || $exec_destination == "cloud" ]]; then
+          echo "Cannot specify both --local and --ssh or --cloud options"
+          exit 1
+        fi
+        if [[ -z $2 ]]; then
+          echo "Option --ssh requires an argument"
+          exit 1
+        fi
+        echo "SSH option selected with argument: $2"
+        exec_destination="ssh"
+        ssh_user="${2%@*}"
+        ssh_host="${2##*@}"
+        cloud_provider=""
+        shift 2
+        ;;
+      -k | --ssh-key)
+        if [[ $exec_destination == "local" || $exec_destination == "cloud" ]]; then
+          echo "Cannot specify both --local and --ssh or --cloud options"
+          exit 1
+        fi
+        if [[ -z $2 ]]; then
+          echo "Option --ssh-key requires an argument"
+          exit 1
+        fi
+        echo "SSH key option selected with argument: $2"
+        exec_destination="ssh"
+        ssh_key="$2"
+        cloud_provider=""
+        shift 2
+        ;;
+      -b | --cloud)
+        if [[ $exec_destination == "local" || $exec_destination == "ssh" ]]; then
+          echo "Cannot specify both --local and --ssh or --cloud options"
+          exit 1
+        fi
+        if [[ -z $2 ]]; then
+          echo "Option --cloud requires an argument"
+          exit 1
+        fi
+        echo "Cloud provider option selected with argument: $2"
+        exec_destination="cloud"
+        if [[ " ${valid_cloud_providers[@]} " =~ " $2 " ]]; then
+          cloud_provider="$2"
+        else
+          echo "Invalid cloud provider: $2"
+          exit 1
+        fi
+        ssh_user=""
+        ssh_host=""
+        ssh_key=""
+        shift 2
+        ;;
+      -r | --run)
+        if [[ -z $2 ]]; then
+          echo "Option --run requires an argument"
+          exit 1
+        fi
+        echo "Run option selected with choice: $2"
+        if [[ " ${valid_choices[@]} " =~ " $2 " ]]; then
+          run_choice="$2"
+        else
+          echo "Invalid choice: $2"
+          exit 1
+        fi
+        shift 2
+        ;;
+      --)
+        shift
+        break
+        ;;
+      *)
+        echo "Invalid option: $1"
+        exit 1
+        ;;
+    esac
+  done
+
+  # Handle non-option arguments (if any)
+  for arg in "$@"; do
+    echo "Non-option argument: $arg"
+  done
+}
+
+display_version
+parse_options "$@"
 echo ""
 
 # Install dependencies
@@ -42,6 +196,10 @@ cd /tmp/auto-spacemesh
 # Install Python dependencies
 echo "Installing Python dependencies"
 pip3 install -qqq -r requirements.txt
+
+# Parse command line arguments
+
+
 
 # Present the user with choices and loop
 while true; do
