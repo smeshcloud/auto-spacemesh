@@ -20,10 +20,10 @@ echo "Installing dependencies"
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
   echo "Linux detected"
   sudo apt-get update
-  sudo apt-get install -y jq wget
+  sudo apt-get install -y jq wget python3 python3-pip
 elif [[ "$OSTYPE" == "darwin"* ]]; then
   echo "MacOS detected"
-  brew install jq wget
+  brew install jq wget python3
 else
   echo "Unsupported OS"
   exit 1
