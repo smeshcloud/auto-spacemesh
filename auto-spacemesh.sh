@@ -23,7 +23,7 @@ valid_choices=("1" "2" "3" "4")
 valid_cloud_providers=("runpod" "valt")
 
 display_help() {
-  echo "Usage: script.sh [OPTIONS]"
+  echo "Usage: auto-spacemesh.sh [OPTIONS]"
   echo "Options:"
   echo "  -h, --help            Display this help message and exit"
   echo "  -v, --version         Display version information and exit"
@@ -37,7 +37,7 @@ display_help() {
 }
 
 display_version() {
-  echo "auto-spacemesh version 1.0"
+  echo "auto-spacemesh version $version"
 }
 
 parse_options() {
