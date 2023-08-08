@@ -10,3 +10,21 @@
 #
 #  Zanoryt <zanoryt@protonmail.com>
 #
+
+version="1.0.0"
+
+echo "Auto-Spacemesh v$version"
+
+# Install dependencies
+echo "Installing dependencies"
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+  echo "Linux detected"
+  sudo apt-get update
+  sudo apt-get install -y jq wget
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+  echo "MacOS detected"
+  brew install jq wget
+else
+  echo "Unsupported OS"
+  exit 1
+fi
