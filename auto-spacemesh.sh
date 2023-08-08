@@ -41,6 +41,8 @@ display_version() {
 }
 
 parse_options() {
+  exec_destination="" # Set default to empty
+
   while [[ $# -gt 0 ]]; do
     case "$1" in
       -h | --help)
@@ -70,7 +72,7 @@ parse_options() {
         shift 2
         ;;
       -l | --local)
-        if [[ $exec_destination == "ssh" || $exec_destination == "cloud" ]]; then
+        if [[ $exec_destination != "" ]]; then
           echo "Cannot specify both --local and --ssh or --cloud options"
           exit 1
         fi
@@ -83,7 +85,7 @@ parse_options() {
         shift
         ;;
       -s | --ssh)
-        if [[ $exec_destination == "local" || $exec_destination == "cloud" ]]; then
+        if [[ $exec_destination != "" ]]; then
           echo "Cannot specify both --local and --ssh or --cloud options"
           exit 1
         fi
@@ -99,7 +101,7 @@ parse_options() {
         shift 2
         ;;
       -k | --ssh-key)
-        if [[ $exec_destination == "local" || $exec_destination == "cloud" ]]; then
+        if [[ $exec_destination != "" ]]; then
           echo "Cannot specify both --local and --ssh or --cloud options"
           exit 1
         fi
@@ -114,7 +116,7 @@ parse_options() {
         shift 2
         ;;
       -b | --cloud)
-        if [[ $exec_destination == "local" || $exec_destination == "ssh" ]]; then
+        if [[ $exec_destination != "" ]]; then
           echo "Cannot specify both --local and --ssh or --cloud options"
           exit 1
         fi
@@ -122,31 +124,47 @@ parse_options() {
           echo "Option --cloud requires an argument"
           exit 1
         fi
-        echo "Cloud provider option selected with argument: $2"
-        exec_destination="cloud"
-        if [[ " ${valid_cloud_providers[@]} " =~ " $2 " ]]; then
-          cloud_provider="$2"
-        else
-          echo "Invalid cloud provider: $2"
+        cloud_arg="${2#*=}"
+        if [[ -z $cloud_arg ]]; then
+          echo "Option --cloud requires an argument"
           exit 1
         fi
+        echo "Cloud provider option selected with argument: $cloud_arg"
+        exec_destination="cloud"
+        cloud_provider="$cloud_arg"
         ssh_user=""
         ssh_host=""
         ssh_key=""
         shift 2
         ;;
+      --cloud-key)
+        if [[ $exec_destination != "cloud" ]]; then
+          echo "Option --cloud-key can only be used with --cloud"
+          exit 1
+        fi
+        if [[ -z $2 ]]; then
+          echo "Option --cloud-key requires an argument"
+          exit 1
+        fi
+        echo "Cloud key option selected with argument: $2"
+        cloud_key="$2"
+        shift 2
+        ;;
       -r | --run)
         if [[ -z $2 ]]; then
-          echo "Option --run requires an argument"
+          echo "Option --run requires an argument (1, 2, or 3)"
           exit 1
         fi
-        echo "Run option selected with choice: $2"
-        if [[ " ${valid_choices[@]} " =~ " $2 " ]]; then
-          run_choice="$2"
-        else
-          echo "Invalid choice: $2"
-          exit 1
-        fi
+        case "$2" in
+          1 | 2 | 3)
+            echo "Run option selected with choice: $2"
+            run_choice="$2"
+            ;;
+          *)
+            echo "Invalid choice: $2. Option --run requires an argument (1, 2, or 3)"
+            exit 1
+            ;;
+        esac
         shift 2
         ;;
       --)
@@ -164,6 +182,12 @@ parse_options() {
   for arg in "$@"; do
     echo "Non-option argument: $arg"
   done
+
+  # Set default to local if no option is provided
+  if [[ $exec_destination == "" ]]; then
+    exec_destination="local"
+    echo "No option specified. Defaulting to local."
+  fi
 }
 
 display_version
@@ -197,21 +221,24 @@ cd /tmp/auto-spacemesh
 echo "Installing Python dependencies"
 pip3 install -qqq -r requirements.txt
 
-# Parse command line arguments
 
-
-
-# Present the user with choices and loop
+# Present the user with choices and loop if run option is not specified
 while true; do
-  echo ""
-  echo "Choose an option:"
-  echo "1. Generate a new Spacemesh node/smesher config"
-  echo "2. Generate a new Spacemesh node/smesher config and start smeshing"
-  echo "3. Start smeshing using an existing Spacemesh node/smesher config"
-  echo "4. Start smeshing using an existing Spacemesh node/smesher config and start smeshing"
-  echo "5. Exit"
-  read -p "> " choice
-  echo ""
+  if [[ -z $run_choice ]]; then
+    echo ""
+    echo "Run option:"
+    echo ""
+    echo "1. Generate a new Spacemesh node/smesher config"
+    echo "2. Generate a new Spacemesh node/smesher config and start smeshing"
+    echo "3. Start smeshing using an existing Spacemesh node/smesher config"
+    echo "4. Start smeshing using an existing Spacemesh node/smesher config and start smeshing"
+    echo "5. Exit"
+    read -p "> " choice
+    echo ""
+  else
+    choice=$run_choice
+    run_choice=""
+  fi
 
   # Execute the user's choice
   case "$choice" in
