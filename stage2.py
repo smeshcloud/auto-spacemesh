@@ -18,6 +18,7 @@ import runpod
 import sys
 
 runpod.api_key = "YOURKEY"
+generate_post_url = "https://raw.githubusercontent.com/smeshcloud/multi-provider-generate-post/main/generate-post.sh"
 
 print("Stage 2 Started")
 
@@ -69,7 +70,7 @@ while pod is None:
     gpu_type_id=gpu_selected['id'],
     gpu_count=gpu_selected['quantity'],
     container_disk_in_gb=disk_size,
-    docker_args="bash -c 'wget -O- https://raw.githubusercontent.com/CryptoZanoryt/spacemesh/main/generate-post/generate-post.sh | bash -s ${disk_size} ${config['node_id']}'",
+    docker_args=f"bash -c 'wget -O- {generate_post_url} | bash -s ${disk_size} ${config['node_id']}'",
   )
   # print("Pod is not available yet, trying again in 15 seconds...")
   print('.', end='', flush=True)
