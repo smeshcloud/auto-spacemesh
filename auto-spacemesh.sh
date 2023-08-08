@@ -4,7 +4,7 @@
 #
 # Usage:
 #
-#  auto-spacemesh.sh
+#  wget -O- https://raw.githubusercontent.com/smeshcloud/auto-spacemesh/main/auto-spacemesh.sh | bash
 #
 # Author:
 #
