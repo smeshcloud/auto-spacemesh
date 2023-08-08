@@ -119,7 +119,6 @@ while true; do
       ;;
     *)
       echo "Invalid choice"
-      exit 1
       ;;
   esac
 done
