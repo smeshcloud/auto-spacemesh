@@ -42,9 +42,45 @@ cd /tmp/auto-spacemesh
 echo "Installing Python dependencies"
 pip3 install -r requirements.txt
 
-# Execute the auto-spacemesh pipeline
-echo "Executing auto-spacemesh pipeline"
-./stage1.sh
-python3 stage2.py
-python3 stage3.py
-python3 stage4.py
+# Present the user with choices and loop
+while true; do
+  echo ""
+  echo "Choose an option:"
+  echo "1. Generate a new Spacemesh node/smesher config"
+  echo "2. Generate a new Spacemesh node/smesher config and start smeshing"
+  echo "3. Start smeshing using an existing Spacemesh node/smesher config"
+  echo "4. Start smeshing using an existing Spacemesh node/smesher config and start smeshing"
+  echo "5. Exit"
+  read -p "> " choice
+  echo ""
+
+  # Execute the user's choice
+  case "$choice" in
+    1)
+      echo "Generating a new Spacemesh node/smesher config"
+      bash stage1.sh
+      ;;
+    2)
+      echo "Generating a new Spacemesh node/smesher config and start smeshing"
+      bash stage1.sh
+      python3 stage2.py
+      ;;
+    3)
+      echo "Start smeshing using an existing Spacemesh node/smesher config"
+      python3 stage2.py
+      ;;
+    4)
+      echo "Start smeshing using an existing Spacemesh node/smesher config and start smeshing"
+      python3 stage2.py
+      python3 stage3.py
+      ;;
+    5)
+      echo "Exiting"
+      exit 0
+      ;;
+    *)
+      echo "Invalid choice"
+      exit 1
+      ;;
+  esac
+done
