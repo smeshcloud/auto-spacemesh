@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# This script is used to engage the second stage of the PoST installation onto a remote server.
+# Generate PoST via cloud based on the config file created by stage 1.
 #
 # Usage:
 #

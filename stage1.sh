@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 #
-# This script is used to build the first stage of the boot loader.
+# Generate new Spacemesh node/smesher config.
 #
 # Usage:
 #
 #   stage1.sh
-#
 #
 # Author:
 #
