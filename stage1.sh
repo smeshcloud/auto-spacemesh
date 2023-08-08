@@ -10,6 +10,12 @@
 #
 #   Zanoryt <zanoryt@protonmail.com>
 #
+# TODO:
+#
+#   - Convert to Python to be consistent with the other stages
+#   - More error handling
+#   - More CLI parameters
+#
 
 echo "Stage 1 Started"
 
@@ -44,7 +50,6 @@ template=$(cat config.mainnet.json)
 template=$(echo "$template" | jq --arg grpc_public_listener "$grpc_public_listener" '.api."grpc-public-listener" = $grpc_public_listener')
 template=$(echo "$template" | jq --arg grpc_private_listener "$grpc_private_listener" '.api."grpc-private-listener" = $grpc_private_listener')
 template=$(echo "$template" | jq --arg grpc_json_listener "$grpc_json_listener" '.api."grpc-json-listener" = $grpc_json_listener')
-
 
 # Create the smeshing-opts object using the provided values
 smeshing_opts='{
