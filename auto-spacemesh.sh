@@ -81,6 +81,8 @@ while true; do
       echo -n "Path to existing Spacemesh node/smesher stage1 config [${default_path}]: "
       read -r path
       path=${path:-$default_path}
+      echo ""
+
       # Check if the directory exists
       if [[ ! -d "$path" ]]; then
         echo "Directory does not exist"
@@ -104,6 +106,8 @@ while true; do
       echo -n "Path to existing Spacemesh node/smesher stage1 config [${default_path}]: "
       read -r path
       path=${path:-$default_path}
+      echo ""
+
       # Check if the directory exists
       if [[ ! -d "$path" ]]; then
         echo "Directory does not exist"
