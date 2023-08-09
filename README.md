@@ -1,5 +1,7 @@
 # auto-spacemesh
 
+![auto-spacemesh Stage 2](auto-spacemesh-stage2-screenshot.png)
+
 ## Stages
 
 |Stage #|Script|Purpose|
