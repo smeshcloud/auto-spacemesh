@@ -76,13 +76,13 @@ while pod is None:
   # print("Pod is not available yet, trying again in 15 seconds...")
   print('.', end='', flush=True)
   sleep(15)
-print(' running!')
+print(' submitted!')
 # print(pod)
 
 print(f"S2.4 Cloud(RunPod) - Pod {pod['id']} is now running")
-print(f"S2.4  - Pod id: {pod['id']}")
+print(f"S2.4  - Pod ID: {pod['id']}")
 print(f"S2.4  - Pod Host ID: {pod['machine']['podHostId']}")
-print(f"S2.4  - SSH command: ssh {pod['machine']['podHostId']}@ssh.runpod.io -i ~/.ssh/id_ed25519")
+print(f"S2.4  - SSH Command: ssh {pod['machine']['podHostId']}@ssh.runpod.io -i ~/.ssh/id_ed25519")
 
 # 5. Write the pod details to a file
 pod_details = {
