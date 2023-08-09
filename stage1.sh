@@ -20,30 +20,33 @@
 echo "Stage 1 Started"
 
 # Set the coinbase and data_dir variables
-config_file="config.json"
 coinbase="sm1qqqqqqxre24mtprsmuht8gfhu28z95hm22zvrdq34rmr8"
-data_dir="/tmp/stage1"
+data_dir=${2:=/data}
+stage1_dir="$data_dir/stage1"
+mkdir -p $stage1_dir
+config_file="$stage1_dir/config.json"
 
-go_spacemesh_dir="/Users/kevin/work/crypto/spacemesh/official/go-spacemesh"
+# go_spacemesh_dir="/Users/kevin/work/crypto/spacemesh/official/go-spacemesh"
+go_spacemesh_dir=${1:=/go-spacemesh}
 go_spacemesh_bin="$go_spacemesh_dir/build/go-spacemesh"
-go_spacemesh_log="/tmp/go-spacemesh.log"
+go_spacemesh_log="$stage1_dir/go-spacemesh.log"
 grpc_public_listener="0.0.0.0:19092"
 grpc_private_listener="127.0.0.1:19093"
 grpc_json_listener="0.0.0.0:19094"
-spacemesh_data_dir="/tmp/smesh-node-data"
+spacemesh_data_dir="$stage1_dir/smesh-node-data"
 filelock="/tmp/sm.lock"
 listen="/ip4/0.0.0.0/tcp/7555"
-smeshing_opts_datadir="/tmp/stage1"
+smeshing_opts_datadir="$stage1_dir"
 
 # Retrieve the latest mainnet config template from https://smapp.spacemesh.network/config.mainnet.json
 echo "S1.1 Retrieving latest mainnet config template"
-wget https://smapp.spacemesh.network/config.mainnet.json -O config.mainnet.json -q
+wget https://smapp.spacemesh.network/config.mainnet.json -O $stage1_dir/config.mainnet.json -q
 
 # Generate a new config.json from template
 echo "S1.2 Generating config.json"
 
 # Load and parse the config.json template
-template=$(cat config.mainnet.json)
+template=$(cat $stage1_dir/config.mainnet.json)
 
 # Adjust api values in the template
 # Set the grpc-public-listener, grpc-private-listener, and grpc-json-listener values
@@ -53,7 +56,7 @@ template=$(echo "$template" | jq --arg grpc_json_listener "$grpc_json_listener" 
 
 # Create the smeshing-opts object using the provided values
 smeshing_opts='{
-  "smeshing-opts-datadir": "'"$data_dir"'",
+  "smeshing-opts-datadir": "'"$stage1_dir"'",
   "smeshing-opts-maxfilesize": 2147483648,
   "smeshing-opts-numunits": 6,
   "smeshing-opts-provider": 0,
@@ -100,7 +103,7 @@ done
 
 # Start the node's smesher service
 echo "S1.5 Starting node smesher"
-payload=$(jq -n --arg coinbase "$coinbase" --arg data_dir "$data_dir" '{ "coinbase": { "address": $coinbase }, "opts": { "data_dir": $data_dir, "num_units": 6, "max_file_size": 2147483648, "provider_id": 0, "throttle": false } }')
+payload=$(jq -n --arg coinbase "$coinbase" --arg data_dir "$stage1_dir" '{ "coinbase": { "address": $coinbase }, "opts": { "data_dir": $data_dir, "num_units": 6, "max_file_size": 2147483648, "provider_id": 0, "throttle": false } }')
 status=$(grpcurl -plaintext -d "$payload" "$grpc_private_listener" spacemesh.v1.SmesherService.StartSmeshing)
 while true; do
   status=$(grpcurl -plaintext -d '' "$grpc_private_listener" spacemesh.v1.SmesherService.PostSetupStatus)
@@ -151,11 +154,11 @@ rm -rf $filelock
 
 # Extract the details from the node's metadata file
 echo "S1.9 Extracting node smesher details"
-node_id=$(jq -r '.NodeId' "$data_dir/postdata_metadata.json" | base64 -d | xxd -p -c 32 -g 32)
-commitment_atx_id=$(jq -r '.CommitmentAtxId' "$data_dir/postdata_metadata.json" | base64 -d | xxd -p -c 32 -g 32)
-labels_per_unit=$(jq -r '.LabelsPerUnit' "$data_dir/postdata_metadata.json")
-num_units=$(jq -r '.NumUnits' "$data_dir/postdata_metadata.json")
-max_file_size=$(jq -r '.MaxFileSize' "$data_dir/postdata_metadata.json")
+node_id=$(jq -r '.NodeId' "$stage1_dir/postdata_metadata.json" | base64 -d | xxd -p -c 32 -g 32)
+commitment_atx_id=$(jq -r '.CommitmentAtxId' "$stage1_dir/postdata_metadata.json" | base64 -d | xxd -p -c 32 -g 32)
+labels_per_unit=$(jq -r '.LabelsPerUnit' "$stage1_dir/postdata_metadata.json")
+num_units=$(jq -r '.NumUnits' "$stage1_dir/postdata_metadata.json")
+max_file_size=$(jq -r '.MaxFileSize' "$stage1_dir/postdata_metadata.json")
 echo "S1.9 Node smesher details extracted"
 echo "S1.9   - Node ID: $node_id"
 echo "S1.9   - Commitment ATX ID: $commitment_atx_id"
@@ -172,11 +175,11 @@ echo '{
   "num_units": "'"$num_units"'",
   "max_file_size": "'"$max_file_size"'",
   "disk_size": "'"$(($num_units*64))"'"
-}' > $data_dir/stage1.json
+}' > $stage1_dir/stage1.json
 echo "S1.10   - Saved details to stage1.json"
-tar -czf /tmp/stage1.tar.gz -C $data_dir key.bin postdata_metadata.json stage1.json
-file_size=$(du -m /tmp/stage1.tar.gz | awk '{print $1}')
-echo "S1.10   - Created tarball at /tmp/stage1.tar.gz ($((file_size))MB) containing stage1.json, postdata_metadata.json and key.bin"
+tar -czf $data_dir/stage1.tar.gz -C $stage1_dir key.bin postdata_metadata.json stage1.json
+file_size=$(du -m $data_dir/stage1.tar.gz | awk '{print $1}')
+echo "S1.10   - Created tarball at $data_dir/stage1.tar.gz ($((file_size))MB) containing stage1.json, postdata_metadata.json and key.bin"
 
 # Store the tarball + details locally or upload to a remote storage service
 # echo "S1.11 Uploading node smesher data to network storage"
