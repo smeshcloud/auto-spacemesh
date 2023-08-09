@@ -42,6 +42,7 @@ stage1_path = f"{data_dir}/stage1"
 stage2_path = f"{data_dir}/stage2"
 stage1_config_path = f"{stage1_path}/stage1.json"
 stage1_config = json.load(open(stage1_config_path, "r"))
+stage2_config_path = f"{stage2_path}/stage2.json"
 
 # Check if mutually exclusive options are provided together
 if (cloud_provider and local_execution) or (cloud_provider and ssh_execution) or (local_execution and ssh_execution):
@@ -114,13 +115,13 @@ elif cloud_provider:
       sleep(5)
     print()
 
-    # 3. If runpod is available, run the pod
+    # If runpod is available, run the pod
     pod = None
     print(f"S2.3 Cloud(RunPod) - Lowest price: {lowest_price * gpu_selected['quantity'] if lowest_price is not None else '-'}/hr")
     print(f"S2.3 Cloud(RunPod) - On-demand price: {ondemand_price * gpu_selected['quantity']}/hr")
     print(f"S2.3 Cloud(RunPod) - Trying to run a pod with {gpu_selected['quantity']} x GPU {gpu_selected['id']} and {disk_size}GB storage...")
 
-    # 4. If runpod is not available, wait until it is
+    # If runpod is not available, wait until it is
     print("S2.4 Cloud(RunPod) - Waiting for availability...", end='', flush=True)
     while pod is None:
       pod = runpod.create_pod(
@@ -142,7 +143,7 @@ elif cloud_provider:
     print(f"S2.4  - Pod Host ID: {pod['machine']['podHostId']}")
     print(f"S2.4  - SSH Command: ssh {pod['machine']['podHostId']}@ssh.runpod.io -i ~/.ssh/id_ed25519")
 
-    # 5. Write the pod details to a file
+    # Write the pod details to a file
     pod_details = {
       'pod_id': pod['id'],
       'pod_host_id': pod['machine']['podHostId'],
@@ -154,16 +155,15 @@ elif cloud_provider:
       },
       'disk_size': disk_size,
     }
-    json.dump(pod_details, open(f"{stage2_path}/stage2.json", "w"))
-    print(f"S2.4 Cloud(RunPod) - Pod details written to {stage2_path}/stage2.json")
+    json.dump(pod_details, open(f"{stage2_config_path}", "w"))
+    print(f"S2.4 Cloud(RunPod) - Pod details written to {stage2_config_path}")
 
-    # 5. Wait for the pod to complete
+    # Wait for the pod to complete
     print("S2.5 Cloud(RunPod) - Waiting for pod to complete", end='', flush=True)
     print()
 
     print("S2.5 Cloud(RunPod) - Pod completed successfully")
 
-    # 6. Completion
     # If the pod fails, exit with an error
     if pod['failure']:
       print(f"S2.6 Cloud(RunPod) - Pod failed with error: {pod['failure']}")
