@@ -105,7 +105,7 @@ elif cloud_provider:
     ondemand_price = None
 
     print("S2.3 Cloud(RunPod) - Checking for pricing and availability...", end='', flush=True)
-    while lowest_price is None:
+    while lowest_price is None and ondemand_price is None:
       gpu = runpod.get_gpu(gpu_selected['id'])
       lowest_price = gpu['lowestPrice']['minimumBidPrice']
       ondemand_price = gpu['lowestPrice']['uninterruptablePrice']
@@ -116,10 +116,9 @@ elif cloud_provider:
 
     # 3. If runpod is available, run the pod
     pod = None
+    print(f"S2.3 Cloud(RunPod) - Lowest price: {lowest_price * gpu_selected['quantity'] if lowest_price is not None else '-'}/hr")
+    print(f"S2.3 Cloud(RunPod) - On-demand price: {ondemand_price * gpu_selected['quantity']}/hr")
     print(f"S2.3 Cloud(RunPod) - Trying to run a pod with {gpu_selected['quantity']} x GPU {gpu_selected['id']} and {disk_size}GB storage...")
-    print(f"S2.3  - Lowest price: {lowest_price * gpu_selected['quantity']}/hr")
-    print(f"S2.3  - On-demand price: {ondemand_price * gpu_selected['quantity']}/hr")
-    print()
 
     # 4. If runpod is not available, wait until it is
     print("S2.4 Cloud(RunPod) - Waiting for availability...", end='', flush=True)
@@ -160,6 +159,7 @@ elif cloud_provider:
 
     # 5. Wait for the pod to complete
     print("S2.5 Cloud(RunPod) - Waiting for pod to complete", end='', flush=True)
+    print()
 
     print("S2.5 Cloud(RunPod) - Pod completed successfully")
 
