@@ -20,16 +20,15 @@
 echo "Stage 1 Started"
 
 # Set the coinbase and data_dir variables
-coinbase="sm1qqqqqqxre24mtprsmuht8gfhu28z95hm22zvrdq34rmr8"
-data_dir=${2:=/data}
+data_dir=${2:-/data}
 stage1_dir="$data_dir/stage1"
-mkdir -p $stage1_dir
-config_file="$stage1_dir/config.json"
-
 # go_spacemesh_dir="/Users/kevin/work/crypto/spacemesh/official/go-spacemesh"
-go_spacemesh_dir=${1:=/go-spacemesh}
+go_spacemesh_dir=${1:-/go-spacemesh}
 go_spacemesh_bin="$go_spacemesh_dir/build/go-spacemesh"
 go_spacemesh_log="$stage1_dir/go-spacemesh.log"
+coinbase="sm1qqqqqqxre24mtprsmuht8gfhu28z95hm22zvrdq34rmr8"
+mkdir -p $stage1_dir
+config_file="$stage1_dir/config.json"
 grpc_public_listener="0.0.0.0:19092"
 grpc_private_listener="127.0.0.1:19093"
 grpc_json_listener="0.0.0.0:19094"
