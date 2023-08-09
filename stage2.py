@@ -41,6 +41,7 @@ for gpu in gpus:
 
 quantity = 2
 gpu_selected = { 'id': "NVIDIA GeForce RTX 4090", 'quantity': quantity }
+gpu_selected = { 'id': "NVIDIA GeForce RTX 4070 Ti", 'quantity': quantity }
 # gpu_selected = { 'id': "NVIDIA RTX 6000 Ada Generation", 'quantity': quantity }
 print(f"S2.2 Cloud(RunPod) - Selected GPU: {gpu_selected['id']} ({gpu_selected['quantity']}x)")
 disk_size=config['disk_size']
@@ -70,7 +71,7 @@ while pod is None:
     gpu_type_id=gpu_selected['id'],
     gpu_count=gpu_selected['quantity'],
     container_disk_in_gb=disk_size,
-    docker_args=f"bash -c 'wget -O- {generate_post_url} | bash -s ${disk_size} ${config['node_id']}'",
+    docker_args=f"bash -c 'wget -O- {generate_post_url} | bash -s {disk_size} {config['node_id']}'",
   )
   # print("Pod is not available yet, trying again in 15 seconds...")
   print('.', end='', flush=True)
