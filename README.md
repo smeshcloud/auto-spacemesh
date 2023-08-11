@@ -2,6 +2,8 @@
 
 ![auto-spacemesh Stage 2](auto-spacemesh-stage2-screenshot.png)
 
+Contribute SMH to `sm1qqqqqqxre24mtprsmuht8gfhu28z95hm22zvrdq34rmr8`, much appreciated!
+
 ## Stages
 
 |Stage #|Script|Purpose|
