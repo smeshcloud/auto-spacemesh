@@ -98,7 +98,7 @@ elif cloud_provider:
       print(f"S2.2  - {gpu['id']}")
 
     gpu_selected = {'id': "NVIDIA GeForce RTX 4090", 'quantity': args.gpu_quantity}
-    gpu_selected = {'id': "NVIDIA GeForce RTX 4080", 'quantity': args.gpu_quantity}
+    gpu_selected = {'id': "NVIDIA GeForce RTX 3090", 'quantity': args.gpu_quantity}
     # gpu_selected = {'id': "NVIDIA RTX 6000 Ada Generation", 'quantity': args.gpu_quantity}
     print(f"S2.2 Cloud(RunPod) - Selected GPU: {gpu_selected['id']} ({gpu_selected['quantity']}x)")
     disk_size = stage1_config['disk_size']
@@ -125,7 +125,7 @@ elif cloud_provider:
     print("S2.4 Cloud(RunPod) - Waiting for availability...", end='', flush=True)
     while pod is None:
       pod = runpod.create_pod(
-        name="post test",
+        name=f"smesher {stage1_config['node_id_first_8']}",
         image_name="ghcr.io/smeshcloud/nvidia-cuda-opencl",
         gpu_type_id=gpu_selected['id'],
         gpu_count=gpu_selected['quantity'],
