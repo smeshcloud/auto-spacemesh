@@ -86,23 +86,30 @@ echo "$template" > $config_file
 
 # Spin up a new go-spacemesh node with the config.json
 echo "S1.3 Starting go-spacemesh node"
-$go_spacemesh_bin -d $spacemesh_data_dir --config $config_file --filelock $filelock --listen $listen --smeshing-opts-datadir $smeshing_opts_datadir 2>/dev/null > $go_spacemesh_log &
+$go_spacemesh_bin -d $spacemesh_data_dir --config $config_file --filelock $filelock --listen $listen --smeshing-opts-datadir $smeshing_opts_datadir > $go_spacemesh_log &
 
 # Wait for the node to be ready
 echo "S1.4 Waiting for node to be ready"
 while true; do
   status=$(grpcurl -plaintext -d '' "$grpc_public_listener" spacemesh.v1.NodeService.Status 2>/dev/null)
-  is_synced=$(echo "$status" | jq -r '.status.isSynced')
-  if [ "$is_synced" = "true" ]; then
-    echo "S1.4 Node is synced"
+  connected_peers=$(echo "$status" | jq -r '.status.connectedPeers')
+  connected_peers=$((connected_peers + 0))
+  if [ "$connected_peers" -gt 0 ]; then
+    echo "S1.4 Node is ready"
     break
   fi
+  # is_synced=$(echo "$status" | jq -r '.status.isSynced')
+  # if [ "$is_synced" = "true" ]; then
+  #   echo "S1.4 Node is synced"
+  #   break
+  # fi
   sleep 1
 done
 
 # Start the node's smesher service
 echo "S1.5 Starting node smesher"
-payload=$(jq -n --arg coinbase "$coinbase" --arg data_dir "$stage1_dir" '{ "coinbase": { "address": $coinbase }, "opts": { "data_dir": $data_dir, "num_units": 6, "max_file_size": 2147483648, "provider_id": 0, "throttle": false } }')
+command="jq -n --arg coinbase \"$coinbase\" --arg data_dir \"$stage1_dir\" '{ \"coinbase\": { \"address\": \"$coinbase\" }, \"opts\": { \"data_dir\": \"$data_dir\", \"num_units\": 6, \"max_file_size\": 2147483648, \"provider_id\": 0, \"throttle\": false } }'"
+payload=$(eval "$command")
 status=$(grpcurl -plaintext -d "$payload" "$grpc_private_listener" spacemesh.v1.SmesherService.StartSmeshing)
 while true; do
   status=$(grpcurl -plaintext -d '' "$grpc_private_listener" spacemesh.v1.SmesherService.PostSetupStatus)
@@ -154,12 +161,13 @@ rm -rf $filelock
 # Extract the details from the node's metadata file
 echo "S1.9 Extracting node smesher details"
 node_id=$(jq -r '.NodeId' "$stage1_dir/postdata_metadata.json" | base64 -d | xxd -p -c 32 -g 32)
+node_id_first_8=$(echo "$node_id" | cut -c 1-8)
 commitment_atx_id=$(jq -r '.CommitmentAtxId' "$stage1_dir/postdata_metadata.json" | base64 -d | xxd -p -c 32 -g 32)
 labels_per_unit=$(jq -r '.LabelsPerUnit' "$stage1_dir/postdata_metadata.json")
 num_units=$(jq -r '.NumUnits' "$stage1_dir/postdata_metadata.json")
 max_file_size=$(jq -r '.MaxFileSize' "$stage1_dir/postdata_metadata.json")
 echo "S1.9 Node smesher details extracted"
-echo "S1.9   - Node ID: $node_id"
+echo "S1.9   - Node ID: $node_id ($node_id_first_8))"
 echo "S1.9   - Commitment ATX ID: $commitment_atx_id"
 echo "S1.9   - Labels per unit: $labels_per_unit"
 echo "S1.9   - Number of units: $num_units"
@@ -169,6 +177,7 @@ echo "S1.9   - Max file size: $max_file_size"
 echo "S1.10 Bundling node smesher data"
 echo '{
   "node_id": "'"$node_id"'",
+  "node_id_first_8": "'"$node_id_first_8"'",
   "commitment_atx_id": "'"$commitment_atx_id"'",
   "labels_per_unit": "'"$labels_per_unit"'",
   "num_units": "'"$num_units"'",
@@ -176,9 +185,9 @@ echo '{
   "disk_size": "'"$(($num_units*64))"'"
 }' > $stage1_dir/stage1.json
 echo "S1.10   - Saved details to stage1.json"
-tar -czf $data_dir/stage1.tar.gz -C $stage1_dir key.bin postdata_metadata.json stage1.json
-file_size=$(du -m $data_dir/stage1.tar.gz | awk '{print $1}')
-echo "S1.10   - Created tarball at $data_dir/stage1.tar.gz ($((file_size))MB) containing stage1.json, postdata_metadata.json and key.bin"
+tar -czf $data_dir/$node_id_first_8.stage1.tar.gz -C $stage1_dir key.bin postdata_metadata.json stage1.json
+file_size=$(du -m $data_dir/$node_id_first_8.stage1.tar.gz | awk '{print $1}')
+echo "S1.10   - Created tarball at $data_dir/$node_id_first_8.stage1.tar.gz ($((file_size))MB) containing stage1.json, postdata_metadata.json and key.bin"
 
 # Store the tarball + details locally or upload to a remote storage service
 # echo "S1.11 Uploading node smesher data to network storage"
