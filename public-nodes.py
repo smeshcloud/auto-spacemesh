@@ -18,6 +18,14 @@ nodes = [
   "pub-node8.smesh.cloud:9092"
 ]
 
+
+# check if grpcurl is installed
+try:
+  result = subprocess.run(["grpcurl", "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+except:
+  print("Error: grpcurl is not installed. Please install it first (if linux, try \"apt install grpcurl\").")
+  sys.exit(1)
+
 # loop through the nodes
 node_status = {}
 for node in nodes:
@@ -37,7 +45,7 @@ total_nodes = len(node_status.keys())
 
 print("================================================================================================================================")
 print("PUBLIC NODES HEALTH CHECK")
-print("================================================================================================================================")
+print("=========================`=======================================================================================================")
 for node in node_status.keys():
   if node_status[node] and node_status[node]['topLayer']:
     if abs(int(node_status[node]['topLayer']['number']) - int(node_status[node]['syncedLayer']['number'])) < 3 and abs(int(node_status[node]['verifiedLayer']['number']) - int(node_status[node]['syncedLayer']['number'])) < 3:
