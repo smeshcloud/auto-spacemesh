@@ -19,6 +19,22 @@ nodes = [
   "pub-node8.smesh.cloud:9092"
 ]
 
+def display_version():
+  print("public-nodes.py version", version)
+
+def parse_options():
+  parser = argparse.ArgumentParser()
+  # add argument to embed the remote server version in the status output
+  parser.add_argument("--node-version", help="Embed the remote server version in the status output", action="store_true")
+  parser.add_argument("-v", "--version", help="Display version information and exit", action="store_true")
+  args = parser.parse_args()
+
+  if args.version:
+      display_version()
+      sys.exit(0)
+
+  return args
+
 def download_grpcurl():
     # Download latest grpcurl from GitHub
     url = "https://github.com/fullstorydev/grpcurl/releases/latest/download/grpcurl_$(uname -s)_$(uname -m).tar.gz"
@@ -44,48 +60,79 @@ def download_grpcurl():
     os.environ["PATH"] += ":/tmp/grpcurl"
     print("Added grpcurl to PATH.")
 
-# Check if grpcurl is installed
-try:
-    result = subprocess.run(["grpcurl", "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
-except:
-    download_grpcurl()
+def print_node_status(node_name, node):
+  global args, not_synced_nodes, synced_nodes, verified_nodes
+  if node and node['topLayer']:
+    if abs(int(node['topLayer']['number']) - int(node['syncedLayer']['number'])) < 3 and abs(int(node['verifiedLayer']['number']) - int(node['syncedLayer']['number'])) < 3:
+      synced = 'SYNCED & VERIFIED'
+      synced_nodes += 1
+      verified_nodes += 1
+    elif abs(int(node['topLayer']['number']) - int(node['syncedLayer']['number'])) < 3:
+      synced = 'SYNCED           '
+      synced_nodes += 1
+    else:
+      synced = 'NOT SYNCED       '
+      not_synced_nodes += 1
+    if args.node_version:
+      print(f"Node {node_name} - {node['version']} - {synced} - Peers: {node['connectedPeers'] if 'connectedPeers' in node else 'N/A'}, Top Layer: {node['topLayer']['number']}, Synced Layer: {node['syncedLayer']['number']}, Verified Layer: {node['verifiedLayer']['number']}")
+    else:
+      print(f"Node {node_name} - {synced} - Peers: {node['connectedPeers'] if 'connectedPeers' in node else 'N/A'}, Top Layer: {node['topLayer']['number']}, Synced Layer: {node['syncedLayer']['number']}, Verified Layer: {node['verifiedLayer']['number']}")
+  else:
+    if args.node_version:
+      print(f"Node {node_name} - {node['version']} - Not connected")
+    else:
+      print(f"Node {node_name} - Not connected")
 
-# Loop through the nodes
-node_status = {}
-for node in nodes:
-    try:
+def print_all_node_status(nodes):
+  print("================================================================================================================================")
+  print("PUBLIC NODES HEALTH CHECK")
+  print("================================================================================================================================")
+  for node in nodes.keys():
+    print_node_status(node, nodes[node])
+
+def print_all_nodes_summary():
+  global not_synced_nodes, synced_nodes, verified_nodes, total_nodes
+  print("================================================================================================================================")
+  print(f"Not synced: {not_synced_nodes}/{total_nodes}, Synced: {synced_nodes}/{total_nodes}, Verified: {verified_nodes}/{total_nodes}")
+  print("================================================================================================================================")
+
+
+def main():
+  global args, not_synced_nodes, synced_nodes, verified_nodes, total_nodes
+
+  args = parse_options()
+
+  # Check if grpcurl is installed
+  try:
+      result = subprocess.run(["grpcurl", "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+  except:
+      download_grpcurl()
+
+  node_status = {}
+  for node in nodes:
+      node_status[node] = {}
+      try:
         result = subprocess.run(["grpcurl", "-plaintext", "-d", "", node, "spacemesh.v1.NodeService.Status"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
-    except:
-        node_status[node] = {}
+        node_status[node] = json.loads(result.stdout.decode('utf-8'))['status']
+      except:
         continue
 
-    if result and result.stdout:
-        node_status[node] = json.loads(result.stdout.decode('utf-8'))['status']
+      if args.node_version:
+        try:
+          result = subprocess.run(["grpcurl", "-plaintext", "-d", "", node, "spacemesh.v1.NodeService.Version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+        except:
+          print(f"Error: Failed to connect to {node}.")
+          sys.exit(1)
+        version = json.loads(result.stdout.decode('utf-8'))['versionString']['value']
+        node_status[node]['version'] = version
 
-not_synced_nodes = 0
-synced_nodes = 0
-verified_nodes = 0
-total_nodes = len(node_status.keys())
+  not_synced_nodes = 0
+  synced_nodes = 0
+  verified_nodes = 0
+  total_nodes = len(node_status.keys())
 
-print("================================================================================================================================")
-print("PUBLIC NODES HEALTH CHECK")
-print("================================================================================================================================")
-for node in node_status.keys():
-    if node_status[node] and node_status[node]['topLayer']:
-        if abs(int(node_status[node]['topLayer']['number']) - int(node_status[node]['syncedLayer']['number'])) < 3 and abs(int(node_status[node]['verifiedLayer']['number']) - int(node_status[node]['syncedLayer']['number'])) < 3:
-            synced = 'SYNCED & VERIFIED'
-            synced_nodes += 1
-            verified_nodes += 1
-        elif abs(int(node_status[node]['topLayer']['number']) - int(node_status[node]['syncedLayer']['number'])) < 3:
-            synced = 'SYNCED           '
-            synced_nodes += 1
-        else:
-            synced = 'NOT SYNCED       '
-            not_synced_nodes += 1
-        print(f"Node {node} - {synced} - Peers: {node_status[node]['connectedPeers'] if 'connectedPeers' in node_status[node] else 'N/A'}, Top Layer: {node_status[node]['topLayer']['number']}, Synced Layer: {node_status[node]['syncedLayer']['number']}, Verified Layer: {node_status[node]['verifiedLayer']['number']}")
-    else:
-        print(f"Node {node} - Not connected")
+  print_all_node_status(node_status)
+  print_all_nodes_summary()
 
-print("================================================================================================================================")
-print(f"Not synced: {not_synced_nodes}/{total_nodes}, Synced: {synced_nodes}/{total_nodes}, Verified: {verified_nodes}/{total_nodes}")
-print("================================================================================================================================")
+if __name__ == "__main__":
+  main()
