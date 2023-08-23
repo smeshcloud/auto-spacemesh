@@ -9,6 +9,7 @@ import urllib.request
 
 version = "1.0.0"
 nodes = [
+  "public.smesh.cloud:9092",
   "pub-node1.smesh.cloud:9092",
   "pub-node2.smesh.cloud:9092",
   "pub-node3.smesh.cloud:9092",
