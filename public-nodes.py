@@ -61,47 +61,93 @@ def download_grpcurl():
     os.environ["PATH"] += ":/tmp/grpcurl"
     print("Added grpcurl to PATH.")
 
-def print_node_status(node_name, node):
-  global args, not_synced_nodes, synced_nodes, verified_nodes
+def column_data_from_node(node):
+  return {
+    'name': node['name'],
+    'port': node['port'],
+    'version': node['version'] if 'version' in node else None,
+    'status': 'SYNCED & VERIFIED' if abs(int(node['topLayer']['number']) - int(node['syncedLayer']['number'])) < 3 and abs(int(node['verifiedLayer']['number']) - int(node['syncedLayer']['number'])) < 3 else 'SYNCED' if abs(int(node['topLayer']['number']) - int(node['syncedLayer']['number'])) < 3 else 'NOT SYNCED',
+    'peers': node['connectedPeers'] if 'connectedPeers' in node else None,
+    'topLayer': node['topLayer']['number'] if node and node['topLayer'] else None,
+    'syncedLayer': node['syncedLayer']['number'] if node and node['syncedLayer'] else None,
+    'verifiedLayer': node['verifiedLayer']['number'] if node and node['verifiedLayer'] else None
+  }
+
+def print_node_status(node):
+  global args, not_synced_nodes, synced_nodes, verified_nodes, columns
   if node and node['topLayer']:
     if abs(int(node['topLayer']['number']) - int(node['syncedLayer']['number'])) < 3 and abs(int(node['verifiedLayer']['number']) - int(node['syncedLayer']['number'])) < 3:
-      synced = 'SYNCED & VERIFIED'
       synced_nodes += 1
       verified_nodes += 1
     elif abs(int(node['topLayer']['number']) - int(node['syncedLayer']['number'])) < 3:
-      synced = 'SYNCED           '
       synced_nodes += 1
     else:
-      synced = 'NOT SYNCED       '
       not_synced_nodes += 1
-    if args.node_version:
-      print(f"Node {node_name} - {node['version']} - {synced} - Peers: {node['connectedPeers'] if 'connectedPeers' in node else 'N/A'}, Top Layer: {node['topLayer']['number']}, Synced Layer: {node['syncedLayer']['number']}, Verified Layer: {node['verifiedLayer']['number']}")
-    else:
-      print(f"Node {node_name} - {synced} - Peers: {node['connectedPeers'] if 'connectedPeers' in node else 'N/A'}, Top Layer: {node['topLayer']['number']}, Synced Layer: {node['syncedLayer']['number']}, Verified Layer: {node['verifiedLayer']['number']}")
+    column_data = column_data_from_node(node)
+    node_row = ""
+    for column in columns:
+      if column['enabled']:
+        node_row += f"{column_data[column['key']]:{column['width']}} "
+    if len(node_row) > terminal_size.columns:
+      node_row = node_row[:terminal_size.columns]
+    print(node_row)
   else:
     if args.node_version:
-      print(f"Node {node_name} - {node['version']} - Not connected")
+      print(f"{node['name']:26} - {node['version']} - Not connected")
     else:
-      print(f"Node {node_name} - Not connected")
+      print(f"{node['name']:26} - Not connected")
 
 def print_all_node_status(nodes):
-  print("================================================================================================================================")
+  global columns
   print("PUBLIC NODES HEALTH CHECK")
-  print("================================================================================================================================")
-  for node in nodes.keys():
-    print_node_status(node, nodes[node])
+  print()
+
+  # cycle through columns and update the width of each column to match the width of the max value in that column
+  for column in columns:
+    if column['enabled']:
+      for node_id in nodes.keys():
+        node = nodes[node_id]
+        column_data = column_data_from_node(node)
+        if column['key'] in column_data:
+          column_width = len(str(column_data[column['key']]))
+          if column_width > column['width']:
+            column['width'] = column_width
+
+  title_row = ""
+  for column in columns:
+    if column['enabled']:
+      title_row += f"{column['name']:{column['width']}} "
+
+  separator_row = ""
+  for column in columns:
+    if column['enabled']:
+      separator_row += f"{'':-<{column['width']}} "
+
+  print(title_row)
+  print(separator_row)
+  for node in nodes.values():
+    print_node_status(node)
 
 def print_all_nodes_summary():
   global not_synced_nodes, synced_nodes, verified_nodes, total_nodes
-  print("================================================================================================================================")
+  print()
   print(f"Not synced: {not_synced_nodes}/{total_nodes}, Synced: {synced_nodes}/{total_nodes}, Verified: {verified_nodes}/{total_nodes}")
-  print("================================================================================================================================")
 
 
 def main():
-  global args, not_synced_nodes, synced_nodes, verified_nodes, total_nodes
+  global args, not_synced_nodes, synced_nodes, verified_nodes, total_nodes, terminal_size, columns
 
   args = parse_options()
+  columns = [
+    { "name": "Node", "key": "name", "width": 4, "align": "left", "align_char": " ", "enabled": True },
+    { "name": "Port", "key": "port", "width": 4, "align": "right", "align_char": " ", "enabled": True },
+    { "name": "Version", "key": "version", "width": 7, "align": "left", "align_char": " ", "enabled": args.node_version },
+    { "name": "Status", "key": "status", "width": 6, "align": "left", "align_char": " ", "enabled": True },
+    { "name": "Peers", "key": "peers", "width": 5, "align": "right", "align_char": " ", "enabled": True },
+    { "name": "Top", "key": "topLayer", "width": 3, "align": "right", "align_char": " ", "enabled": True },
+    { "name": "Synced", "key": "syncedLayer", "width": 6, "align": "right", "align_char": " ", "enabled": True },
+    { "name": "Verified", "key": "verifiedLayer", "width": 8, "align": "right", "align_char": " ", "enabled": True }
+  ]
 
   # Check if grpcurl is installed
   try:
@@ -109,12 +155,17 @@ def main():
   except:
       download_grpcurl()
 
+  terminal_size = os.get_terminal_size()
+
   node_status = {}
   for node in nodes:
-      node_status[node] = {}
+      node_name, node_port = node.split(':')
+      node_status[node] = { 'name': node_name, 'port': node_port }
       try:
         result = subprocess.run(["grpcurl", "-plaintext", "-d", "", node, "spacemesh.v1.NodeService.Status"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
         node_status[node] = json.loads(result.stdout.decode('utf-8'))['status']
+        node_status[node]['name'] = node_name
+        node_status[node]['port'] = node_port
       except:
         continue
 
