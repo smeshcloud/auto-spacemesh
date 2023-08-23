@@ -62,20 +62,30 @@ def download_grpcurl():
     print("Added grpcurl to PATH.")
 
 def column_data_from_node(node):
-  return {
+  data = {
     'name': node['name'],
     'port': node['port'],
     'version': node['version'] if 'version' in node else None,
-    'status': 'SYNCED & VERIFIED' if abs(int(node['topLayer']['number']) - int(node['syncedLayer']['number'])) < 3 and abs(int(node['verifiedLayer']['number']) - int(node['syncedLayer']['number'])) < 3 else 'SYNCED' if abs(int(node['topLayer']['number']) - int(node['syncedLayer']['number'])) < 3 else 'NOT SYNCED',
-    'peers': node['connectedPeers'] if 'connectedPeers' in node else None,
-    'topLayer': node['topLayer']['number'] if node and node['topLayer'] else None,
-    'syncedLayer': node['syncedLayer']['number'] if node and node['syncedLayer'] else None,
-    'verifiedLayer': node['verifiedLayer']['number'] if node and node['verifiedLayer'] else None
+    'peers': None,
+    'topLayer': None,
+    'syncedLayer': None,
+    'verifiedLayer': None
   }
+
+  if 'topLayer' in node and 'syncedLayer' in node and 'verifiedLayer' in node:
+    data['status'] = 'SYNCED & VERIFIED' if abs(int(node['topLayer']['number']) - int(node['syncedLayer']['number'])) < 3 and abs(int(node['verifiedLayer']['number']) - int(node['syncedLayer']['number'])) < 3 else 'SYNCED' if abs(int(node['topLayer']['number']) - int(node['syncedLayer']['number'])) < 3 else 'NOT SYNCED'
+    data['peers'] = node['connectedPeers']
+    data['topLayer'] = node['topLayer']['number'] if node and node['topLayer'] else None
+    data['syncedLayer'] = node['syncedLayer']['number'] if node and node['syncedLayer'] else None
+    data['verifiedLayer'] = node['verifiedLayer']['number'] if node and node['verifiedLayer'] else None
+  else:
+    data['status'] = 'NOT AVAILABLE'
+
+  return data
 
 def print_node_status(node):
   global args, not_synced_nodes, synced_nodes, verified_nodes, columns
-  if node and node['topLayer']:
+  if node and 'topLayer' in node:
     if abs(int(node['topLayer']['number']) - int(node['syncedLayer']['number'])) < 3 and abs(int(node['verifiedLayer']['number']) - int(node['syncedLayer']['number'])) < 3:
       synced_nodes += 1
       verified_nodes += 1
@@ -83,19 +93,18 @@ def print_node_status(node):
       synced_nodes += 1
     else:
       not_synced_nodes += 1
-    column_data = column_data_from_node(node)
-    node_row = ""
-    for column in columns:
-      if column['enabled']:
+
+  column_data = column_data_from_node(node)
+  node_row = ""
+  for column in columns:
+    if column['enabled']:
+      if column_data[column['key']] is not None:
         node_row += f"{column_data[column['key']]:{column['width']}} "
-    if len(node_row) > terminal_size.columns:
-      node_row = node_row[:terminal_size.columns]
-    print(node_row)
-  else:
-    if args.node_version:
-      print(f"{node['name']:26} - {node['version']} - Not connected")
-    else:
-      print(f"{node['name']:26} - Not connected")
+      else:
+        node_row += f"{'':{column['width']}} "
+  if len(node_row) > terminal_size.columns:
+    node_row = node_row[:terminal_size.columns]
+  print(node_row)
 
 def print_all_node_status(nodes):
   global columns
