@@ -143,7 +143,7 @@ def print_all_node_status(nodes):
 def print_all_nodes_summary():
   global not_synced_nodes, synced_nodes, verified_nodes, total_nodes
   print()
-  print(f"Not synced: {not_synced_nodes}/{total_nodes}, Synced: {synced_nodes}/{total_nodes}, Verified: {verified_nodes}/{total_nodes}, Offline: {offline_nodes}/{total_nodes}")
+  print(f"Offline: {offline_nodes}/{total_nodes}, Not synced: {not_synced_nodes}/{total_nodes}, Synced: {synced_nodes}/{total_nodes}, Verified: {verified_nodes}/{total_nodes}")
 
 
 def main():
