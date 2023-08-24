@@ -84,7 +84,7 @@ def column_data_from_node(node):
   return data
 
 def print_node_status(node):
-  global args, not_synced_nodes, synced_nodes, verified_nodes, columns
+  global args, not_synced_nodes, synced_nodes, verified_nodes, offline_nodes, columns
   if node and 'topLayer' in node:
     if abs(int(node['topLayer']['number']) - int(node['syncedLayer']['number'])) < 3 and abs(int(node['verifiedLayer']['number']) - int(node['syncedLayer']['number'])) < 3:
       synced_nodes += 1
@@ -93,6 +93,8 @@ def print_node_status(node):
       synced_nodes += 1
     else:
       not_synced_nodes += 1
+  else:
+    offline_nodes += 1
 
   column_data = column_data_from_node(node)
   node_row = ""
@@ -108,7 +110,8 @@ def print_all_node_status(nodes):
   global columns
   print("PUBLIC NODES HEALTH CHECK")
   print()
-  print("Host public.smesh.cloud is a load balancer that distributes traffic to the other available nodes. It will not include offline nodes.")
+  print("Host public.smesh.cloud is a load balancer that distributes traffic to the other available nodes.")
+  print("Offline nodes will not be included in rotation.")
   print()
 
   # cycle through columns and update the width of each column to match the width of the max value in that column
@@ -140,11 +143,11 @@ def print_all_node_status(nodes):
 def print_all_nodes_summary():
   global not_synced_nodes, synced_nodes, verified_nodes, total_nodes
   print()
-  print(f"Not synced: {not_synced_nodes}/{total_nodes}, Synced: {synced_nodes}/{total_nodes}, Verified: {verified_nodes}/{total_nodes}")
+  print(f"Not synced: {not_synced_nodes}/{total_nodes}, Synced: {synced_nodes}/{total_nodes}, Verified: {verified_nodes}/{total_nodes}, Offline: {offline_nodes}/{total_nodes}")
 
 
 def main():
-  global args, not_synced_nodes, synced_nodes, verified_nodes, total_nodes, columns
+  global args, not_synced_nodes, synced_nodes, verified_nodes, total_nodes, offline_nodes, columns
 
   args = parse_options()
   columns = [
@@ -188,6 +191,7 @@ def main():
   not_synced_nodes = 0
   synced_nodes = 0
   verified_nodes = 0
+  offline_nodes = 0
   total_nodes = len(node_status.keys())
 
   print_all_node_status(node_status)
