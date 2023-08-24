@@ -79,7 +79,7 @@ def column_data_from_node(node):
     data['syncedLayer'] = node['syncedLayer']['number'] if node and node['syncedLayer'] else None
     data['verifiedLayer'] = node['verifiedLayer']['number'] if node and node['verifiedLayer'] else None
   else:
-    data['status'] = 'NOT AVAILABLE'
+    data['status'] = 'OFFLINE'
 
   return data
 
@@ -102,13 +102,13 @@ def print_node_status(node):
         node_row += f"{column_data[column['key']]:{column['width']}} "
       else:
         node_row += f"{'':{column['width']}} "
-  if len(node_row) > terminal_size.columns:
-    node_row = node_row[:terminal_size.columns]
   print(node_row)
 
 def print_all_node_status(nodes):
   global columns
   print("PUBLIC NODES HEALTH CHECK")
+  print()
+  print("Host public.smesh.cloud is a load balancer that distributes traffic to the other available nodes. It will not include offline nodes.")
   print()
 
   # cycle through columns and update the width of each column to match the width of the max value in that column
@@ -144,7 +144,7 @@ def print_all_nodes_summary():
 
 
 def main():
-  global args, not_synced_nodes, synced_nodes, verified_nodes, total_nodes, terminal_size, columns
+  global args, not_synced_nodes, synced_nodes, verified_nodes, total_nodes, columns
 
   args = parse_options()
   columns = [
@@ -163,8 +163,6 @@ def main():
       result = subprocess.run(["grpcurl", "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
   except:
       download_grpcurl()
-
-  terminal_size = os.get_terminal_size()
 
   node_status = {}
   for node in nodes:
